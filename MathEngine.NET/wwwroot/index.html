@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width">
+    <title>MathEngine.NET</title>
+    <script src="lib/microsoft/signalr/dist/browser/signalr.js"></script>
+    <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+    <script id="MathJax-script" async
+            src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+    <script>
+        function PageLoad() {
+
+            window.MathExpressionQueue = [];
+            window.IsTypesetPromiseDone = true;
+
+            function RenderMath( expression) {
+
+                console.log("RenderMath called");
+                if (window.IsTypesetPromiseDone === false) {
+                    window.MathExpressionQueue.push(expression);
+                    return;
+                }
+
+                window.IsTypesetPromiseDone = false;
+                console.log("promise start");
+
+                var mathDiv = document.getElementById('Math');
+                mathDiv.innerHTML += "\\[" + expression + "\\]";
+
+
+                MathJax.texReset();
+                MathJax.typesetClear();
+                MathJax.typesetPromise().catch(function (err) {
+                    console.error(err);
+                }).then(function () {
+                    window.IsTypesetPromiseDone = true;
+                    console.log("promise stop");
+                    console.log("queue: " + window.MathExpressionQueue);
+
+                    if (window.MathExpressionQueue.length > 0) {
+                        expBuffer = window.MathExpressionQueue.shift();
+                        RenderMath(expBuffer);
+                    }
+                    
+                });
+
+            }
+
+            
+            var connection = new signalR.HubConnectionBuilder().withUrl("/mathHub").build();
+            connection.on("ReceiveMessage", function (message) {
+                console.log(message);
+                RenderMath(message);
+            });
+
+
+            document.getElementById("runButton").addEventListener("click", function (event) {
+
+                var message = "test";
+                connection.invoke("Run", message).catch(function (err) {
+                    return console.error(err.toString());
+                });
+                event.preventDefault();
+            });
+
+            connection.start().then(function () {
+                document.getElementById("runButton").disabled = false;
+            }).catch(function (err) {
+                return console.error(err.toString());
+            });
+
+        }
+
+
+    </script>
+
+</head>
+<body onload="PageLoad()">
+
+
+    <input type="button" id="runButton" value="Run" />
+<p id="Math">
+
+</p>
+</body>
+</html>
