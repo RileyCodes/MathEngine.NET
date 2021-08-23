@@ -29,6 +29,9 @@ namespace MathEngine.NET
             Add,
             Minus,
             Multiply,
+            Equation,
+            Fraction,
+            Term,
             None
         }
         internal SymbolType symbolType;
@@ -96,15 +99,49 @@ namespace MathEngine.NET
         }
     }
 
-    public class Term
+    public class Term : ILinkedUnits
     {
         public Symbol Symbol;
         public Symbol Dgree;
+        public Operator Prev;
+        public Operator Next;
+
+        public Term()
+        {
+            //symbolType = SymbolType.Term;
+        }
+
+        public object GetPrev()
+        {
+            return Prev;
+        }
+
+        public object GetNext()
+        {
+            return Prev;
+        }
+
     }
 
-    public abstract class Operator : Symbol
+    public interface ILinkedUnits
     {
+        public object GetPrev();
+        public object GetNext();
+    }
 
+    public abstract class Operator : Symbol, ILinkedUnits
+    {
+        public Term Prev;
+        public Term Next;
+
+        public object GetPrev()
+        {
+            return Prev;
+        }
+        public object GetNext()
+        {
+            return Prev;
+        }
     }
 
     class OpAdd : Operator
@@ -121,29 +158,103 @@ namespace MathEngine.NET
         }
     }
 
+    class OpNone : Operator
+    {
+        public OpNone()
+        {
+            this.symbolType = SymbolType.None;
+        }
+
+
+        public override string GetExpression()
+        {
+            return "";
+        }
+    }
+
+    class OpMultiply : Operator
+    {
+        public OpMultiply()
+        {
+            this.symbolType = SymbolType.Multiply;
+        }
+
+
+        public override string GetExpression()
+        {
+            return " * ";
+        }
+    }
+
+    class OpMinus : Operator
+    {
+        public OpMinus()
+        {
+            this.symbolType = SymbolType.Minus;
+        }
+        public override string GetExpression()
+        {
+            return "-";
+        }
+    }
+
 
     public class Equation : Symbol
     {
+
+        public Equation()
+        {
+            this.symbolType = SymbolType.Equation;
+        }
         //private static Operator noneOperator = new Operator(Operator.OperatorType.None);
 
         private Func<Equation> MakeEquation = null;
         public List<Term> terms = new List<Term>();
         public List<Operator> operators = new List<Operator>();
-        public void AddTerm(Term term, Operator op = null)
+
+        void LinkLastUnit()
         {
-            if (op != null)
+            //operators[^2]
+            operators[^1].Prev = terms[^1];
+
+            if (operators.Count >= 2)
+                terms[^1].Prev = operators[^2];
+
+            EquationWalker.Walk((unit =>
             {
-                //op.left = terms[^1];
-                //op.right = term;
-                operators.Add(op);
-            }
+                var term = (Term) unit;
+                term.Next = operators[^1];
+            }), operators[^1],EquationWalker.WalkDirection.Left,0,1);
+
+            EquationWalker.Walk((unit =>
+            {
+                var oper = (Operator) unit;
+                oper.Next = terms[^1];
+            }), operators[^1],EquationWalker.WalkDirection.Left,0,2,EquationWalker.WalkMode.EndOnly);
+
+            int x = 0;
+        }
+        public void AddTerm(Term term, Operator op)
+        {
+            operators.Add(op);
+
             terms.Add(term);
+            LinkLastUnit();
         }
 
         public void Add(Term left, Term right)
         {
 
         }
+
+        Equation SubEquation(int index,int count = -1)
+        {
+            var copy = Copy();
+            EquationWalker.Walk(null, terms[0], EquationWalker.WalkDirection.Right, index, count);
+
+            return copy;
+        }
+
         public Equation Copy()
         {
             return Equation.Create(MakeEquation);
@@ -162,7 +273,7 @@ namespace MathEngine.NET
             return term.Dgree.AsConst_TryGetValue() == 1;
         }
 
-        public string GetExpression()
+        public override string GetExpression()
         {
             string expression = "";
             for(var i=0; i < terms.Count; i++)
@@ -187,7 +298,7 @@ namespace MathEngine.NET
                 }
 
             }
-            return expression;
+            return ExpressionConverter.AsBracket(expression);
         }
     }
 

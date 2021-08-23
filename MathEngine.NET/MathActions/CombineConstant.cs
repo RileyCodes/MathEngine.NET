@@ -43,14 +43,14 @@ namespace MathEngine.NET.MathActions
 
             Equation resultEquation = new Equation();
 
-            mathContext.logMgr.PushEquation(src);
+            //mathContext.logMgr.PushEquation(src);
 
-            var step1Equation = src.Copy();
+            //var step1Equation = src.Copy();
 
-            var constTermSrc = step1Equation.terms.FirstOrDefault(IsConstant);
-            constTermSrc.Symbol.style.color = Style.Color.red;
+            //var constTermSrc = step1Equation.Units.FirstOrDefault(IsConstant);
+            //constTermSrc.Symbol.style.color = Style.Color.red;
 
-            mathContext.logMgr.PushEquation(step1Equation);
+            //mathContext.logMgr.PushEquation(step1Equation);
 
             int x = 0;
 

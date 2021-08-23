@@ -13,26 +13,68 @@ namespace MathEngine.NET.Hubs
         {
             MathContext mathContext = new MathContext(new LogMgr(Clients));
             var constCombine = new CombineConstant(mathContext);
+            var expend = new ExpandMultiplication(mathContext);
 
             var testEquation = Equation.Create(() =>
             {
+                
                 Equation testEquation = new Equation();
-                testEquation.AddTerm(new Term()
-                {
-                    Symbol = new Variable("x"),
-                    Dgree = new Constant(2)
-                }, new OpAdd());
 
                 testEquation.AddTerm(new Term()
                 {
-                    Symbol = new Constant(123),
+                    Symbol = new Constant(0),
                     Dgree = new Constant(1)
+                }, new OpMinus());
+
+                testEquation.AddTerm(new Term()
+                {
+                    Symbol = new Constant(2),
+                    Dgree = new Constant(1)
+                }, new OpMultiply());
+
+                testEquation.AddTerm(new Term()
+                {
+                    Symbol = new Variable("y"),
+                    Dgree = new Constant(-3)
+                }, new OpMultiply());
+
+
+                var inside = Equation.Create(() =>
+                {
+                    Equation insideEquation = new Equation();
+                    insideEquation.AddTerm(new Term()
+                    {
+                        Symbol = new Variable("y"),
+                        Dgree = new Constant(1)
+                    }, new OpAdd());
+
+
+                    insideEquation.AddTerm(new Term()
+                    {
+                        Symbol = new Constant(5),
+                        Dgree = new Constant(1)
+                    }, new OpMultiply());
+
+                    insideEquation.AddTerm(new Term()
+                    {
+                        Symbol = new Variable("y"),
+                        Dgree = new Constant(3)
+                    },new OpMultiply());
+
+                    return insideEquation;
                 });
+
+
+                testEquation.AddTerm(new Term()
+                {
+                    Symbol = inside,
+                    Dgree = new Constant(1)
+                }, new OpNone());
 
                 return testEquation;
             });
 
-            constCombine.Run(testEquation);
+            expend.Run(testEquation);
 
             var copy = testEquation.Copy();
             string exp = testEquation.GetExpression();
